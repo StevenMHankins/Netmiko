@@ -1,0 +1,46 @@
+import concurrent.futures
+import time
+from netmiko import ConnectHandler
+import getpass
+import os
+
+
+password = getpass.getpass('Please enter the password: ')
+username = input('Enter your username: ')
+start_time = time.time()
+
+switch_list = [] ### Add network devices here EX: '10.10.10.1','10.10.10.2'
+device_inventory = []
+
+for ip in switch_list:
+    device = {
+        "device_type": "cisco_ios",
+        "host": ip,
+        "username": username,
+        "password": password,
+        "secret": password  # Enable password
+    }
+    device_inventory.append(device)
+
+def configure_switch(switch):
+    print(f"Connecting to {switch['host']}")
+    connection = ConnectHandler(**device)
+    connection.enable()
+
+    config_commands = [] ### Add commands here EX: 'command1','command2'
+    connection.send_config_set(config_commands)
+    connection.save_config()
+
+    print('Closing Connection')
+    connection.disconnect()
+
+# Use ThreadPoolExecutor with a max_workers of 5
+with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    executor.map(configure_switch, device_inventory)
+
+end_time = time.time()
+elapsed_time = end_time - start_time
+
+print(f"Start time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}")
+print(f"End time: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(end_time))}")
+print(f"Time taken: {elapsed_time:.2f} seconds")
